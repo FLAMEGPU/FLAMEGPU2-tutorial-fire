@@ -23,16 +23,17 @@ norm = BoundaryNorm(
 )
 
 def unpack(v):
-    # Function is required to convert agent variable states from array to scalars due to bug in RC3
+    # Function is required to convert agent variable steps from array to scalars due to bug in RC3
     # I.e. [123] to 123
     return v[0] if isinstance(v, list) else v
 
 
-def load_data(state_count):
+def load_data(step_count):
+    """Function loads FLAME GPU fire simulation output data (in json format) and stores it in the global grid array"""
     global grid
     global loaded_steps
     try:
-        for i in range(state_count+1):
+        for i in range(step_count+1):
             file_path = f"{DATA_DIR}/{i}.json"
             with open(file_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
@@ -48,7 +49,7 @@ def load_data(state_count):
             max_y = unpack(max(agent.get('y', 0) for agent in agents))
 
             if not grid.any():
-                grid = np.zeros((int(max_x) + 1, int(max_y) + 1, int(state_count)+1))
+                grid = np.zeros((int(max_x) + 1, int(max_y) + 1, int(step_count)+1))
 
             for agent in agents:
                 x, y = unpack(agent.get('x', 0)), unpack(agent.get('y', 0))
@@ -56,42 +57,48 @@ def load_data(state_count):
 
                 if status != 0:
                     grid[int(x), int(y), i] = status  # Mark active agents with their status
-        loaded_steps = state_count
+        loaded_steps = step_count
     except Exception as e:
         print(f"Error reading JSON file: {e}")
         print(traceback.format_exc())
 
 
-def plot_state(state):
-    """Reads a JSON file and plots active agents."""
+def plot_step(step):
+    """
+    Plots a single agent step as a matplotlib plot.
+    If the data is not loaded then it will be loaded first.
+    """
 
     # if grid is empty force reload of data
-    if not grid.any() or loaded_steps < state:
-        load_data(state)
+    if not grid.any() or loaded_steps < step:
+        load_data(step)
 
     # Plotting
     plt.figure(figsize=(8, 6))
 
-    im = plt.imshow(grid[:,:,state].T, origin='lower', cmap=cmap, norm=norm)
+    im = plt.imshow(grid[:,:,step].T, origin='lower', cmap=cmap, norm=norm)
 
     #plot
-    plt.title(f"Agent Sugar Level and Active Agents Step {state}")
+    plt.title(f"Agent Sugar Level and Active Agents Step {step}")
     # plt.colorbar(im)
     plt.show()
 
 
-def animate_states(state_count):
-    """Reads a JSON file and plots active agents."""
+def animate_steps(step_count):
+    """
+    Plots the simulation outputs as a looping animation.
+    If the data is not loaded then it will be loaded first.
+    """
     global ani
 
     # if grid is empty force reload of data
     if not grid.any():
-        load_data(state_count)
+        load_data(step_count)
 
     fig, ax = plt.subplots()
 
     ims = [] # ims is a list of lists, each row is a list of artists to draw in the
-    for i in range(state_count):
+    for i in range(step_count):
         im = ax.imshow(grid[:,:,i].T, animated=True, cmap=cmap, norm=norm, origin='lower')
         if i == 0:
             ax.imshow(grid[:,:,i].T, animated=True, cmap=cmap, norm=norm, origin='lower')  # show an initial one first
@@ -105,20 +112,23 @@ def animate_states(state_count):
 
 
 
-def display_states(state_count):
-    """Reads a JSON file and plots active agents."""
+def display_steps(step_count):
+    """
+    Plots the simulation outputs as an interactive plot with a slider controlling the step number.
+    If the data is not loaded then it will be loaded first.
+    """
     global im
     global slider
     im = slider = None
 
     # if grid is empty force reload of data
     if not grid.any():
-        load_data(state_count)
+        load_data(step_count)
 
     fig, ax = plt.subplots()
     im = ax.imshow(grid[:,:,0].T, cmap=cmap, norm=norm, origin='lower')
     ax_depth = plt.axes([0.23, 0.02, 0.56, 0.04])
-    slider = Slider(ax_depth, 'iteration', 0, grid.shape[2]-1, valinit=0)
+    slider = Slider(ax_depth, 'step', 0, grid.shape[2]-1, valinit=0)
     update_slider = lambda v: im.set_data(grid[:, :, int(round(v))].T)
     slider.on_changed(update_slider)
 

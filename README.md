@@ -27,7 +27,7 @@ If you wish to follow this tutorial at your own pace, you can run this tutorial 
 
 You can launch the notebook in Colab using the link below. Some additional steps are required within the notebook which are described.
 
- - [Launch Colab Notebook](https://colab.research.google.com/github/FLAMEGPU/FLAMEGPU2_python_sugarscape_tutorial/blob/main/FLAMEGPU-Tutorial.ipynb)
+ - [Launch Colab Notebook](https://colab.research.google.com/github/FLAMEGPU/FLAMEGPU2-tutorial-fire/blob/main/FLAMEGPU-Tutorial-Fire.ipynb)
 
 ### Running this Tutorial Locally
 
